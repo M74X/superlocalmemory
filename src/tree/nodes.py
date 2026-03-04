@@ -35,46 +35,48 @@ class TreeNodesMixin:
             New node ID
         """
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Get parent path and depth
-        cursor.execute('SELECT tree_path, depth FROM memory_tree WHERE id = ?', (parent_id,))
-        result = cursor.fetchone()
+            # Get parent path and depth
+            cursor.execute('SELECT tree_path, depth FROM memory_tree WHERE id = ?', (parent_id,))
+            result = cursor.fetchone()
 
-        if not result:
-            raise ValueError(f"Parent node {parent_id} not found")
+            if not result:
+                raise ValueError(f"Parent node {parent_id} not found")
 
-        parent_path, parent_depth = result
+            parent_path, parent_depth = result
 
-        # Calculate new node position
-        depth = parent_depth + 1
+            # Calculate new node position
+            depth = parent_depth + 1
 
-        cursor.execute('''
-            INSERT INTO memory_tree (
-                node_type, name, description,
-                parent_id, tree_path, depth,
-                memory_id, last_updated
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            node_type,
-            name,
-            description,
-            parent_id,
-            '',  # Placeholder, updated below
-            depth,
-            memory_id,
-            datetime.now().isoformat()
-        ))
+            cursor.execute('''
+                INSERT INTO memory_tree (
+                    node_type, name, description,
+                    parent_id, tree_path, depth,
+                    memory_id, last_updated
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                node_type,
+                name,
+                description,
+                parent_id,
+                '',  # Placeholder, updated below
+                depth,
+                memory_id,
+                datetime.now().isoformat()
+            ))
 
-        node_id = cursor.lastrowid
+            node_id = cursor.lastrowid
 
-        # Update tree_path with actual node_id
-        tree_path = f"{parent_path}.{node_id}"
-        cursor.execute('UPDATE memory_tree SET tree_path = ? WHERE id = ?', (tree_path, node_id))
+            # Update tree_path with actual node_id
+            tree_path = f"{parent_path}.{node_id}"
+            cursor.execute('UPDATE memory_tree SET tree_path = ? WHERE id = ?', (tree_path, node_id))
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+        finally:
+            conn.close()
 
         return node_id
 
@@ -92,13 +94,15 @@ class TreeNodesMixin:
             raise ValueError("Cannot delete root node")
 
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Get tree_path
-        cursor.execute('SELECT tree_path, parent_id FROM memory_tree WHERE id = ?', (node_id,))
-        result = cursor.fetchone()
+            # Get tree_path
+            cursor.execute('SELECT tree_path, parent_id FROM memory_tree WHERE id = ?', (node_id,))
+            result = cursor.fetchone()
 
-        if not result:
+            if not result:
+        finally:
             conn.close()
             return False
 
@@ -127,13 +131,15 @@ class TreeNodesMixin:
             node_id: Node ID to update
         """
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Get all descendant memory nodes
-        cursor.execute('SELECT tree_path FROM memory_tree WHERE id = ?', (node_id,))
-        result = cursor.fetchone()
+            # Get all descendant memory nodes
+            cursor.execute('SELECT tree_path FROM memory_tree WHERE id = ?', (node_id,))
+            result = cursor.fetchone()
 
-        if not result:
+            if not result:
+        finally:
             conn.close()
             return
 
@@ -167,16 +173,18 @@ class TreeNodesMixin:
     def _update_all_counts(self):
         """Update counts for all nodes (used after build_tree)."""
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Get all nodes in reverse depth order (leaves first)
-        cursor.execute('''
-            SELECT id FROM memory_tree
-            ORDER BY depth DESC
-        ''')
+            # Get all nodes in reverse depth order (leaves first)
+            cursor.execute('''
+                SELECT id FROM memory_tree
+                ORDER BY depth DESC
+            ''')
 
-        node_ids = [row[0] for row in cursor.fetchall()]
-        conn.close()
+            node_ids = [row[0] for row in cursor.fetchall()]
+        finally:
+            conn.close()
 
         # Update each node (will cascade to parents)
         processed = set()

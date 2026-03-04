@@ -128,23 +128,25 @@ class ProfileManager:
         main_cursor = main_conn.cursor()
 
         old_conn = sqlite3.connect(old_db_path)
-        old_cursor = old_conn.cursor()
+        try:
+            old_cursor = old_conn.cursor()
 
-        # Get existing hashes
-        main_cursor.execute("SELECT content_hash FROM memories WHERE content_hash IS NOT NULL")
-        existing_hashes = {row[0] for row in main_cursor.fetchall()}
+            # Get existing hashes
+            main_cursor.execute("SELECT content_hash FROM memories WHERE content_hash IS NOT NULL")
+            existing_hashes = {row[0] for row in main_cursor.fetchall()}
 
-        # Get columns from old DB
-        old_cursor.execute("PRAGMA table_info(memories)")
-        old_columns = {row[1] for row in old_cursor.fetchall()}
+            # Get columns from old DB
+            old_cursor.execute("PRAGMA table_info(memories)")
+            old_columns = {row[1] for row in old_cursor.fetchall()}
 
-        # Build SELECT based on available columns
-        select_cols = ['content', 'summary', 'project_path', 'project_name', 'tags',
-                       'category', 'memory_type', 'importance', 'created_at', 'updated_at',
-                       'content_hash']
-        available_cols = [c for c in select_cols if c in old_columns]
+            # Build SELECT based on available columns
+            select_cols = ['content', 'summary', 'project_path', 'project_name', 'tags',
+                           'category', 'memory_type', 'importance', 'created_at', 'updated_at',
+                           'content_hash']
+            available_cols = [c for c in select_cols if c in old_columns]
 
-        if 'content' not in available_cols:
+            if 'content' not in available_cols:
+        finally:
             old_conn.close()
             main_conn.close()
             return
@@ -257,17 +259,19 @@ class ProfileManager:
             return 0
 
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM memories WHERE profile = ?", (profile_name,))
-        count = cursor.fetchone()[0]
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM memories WHERE profile = ?", (profile_name,))
+            count = cursor.fetchone()[0]
+        finally:
+            conn.close()
         return count
 
-    def get_active_profile(self):
+    def get_active_profile(self) -> str:
         """Get the currently active profile name."""
         return self.config.get('active_profile', 'default')
 
-    def list_profiles(self):
+    def list_profiles(self) -> list:
         """List all available profiles with memory counts."""
         print("\n" + "=" * 60)
         print("AVAILABLE MEMORY PROFILES")
@@ -410,11 +414,13 @@ class ProfileManager:
         # Move memories to default profile
         if self.db_path.exists() and count > 0:
             conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("UPDATE memories SET profile = 'default' WHERE profile = ?", (name,))
-            moved = cursor.rowcount
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE memories SET profile = 'default' WHERE profile = ?", (name,))
+                moved = cursor.rowcount
+                conn.commit()
+            finally:
+                conn.close()
             print(f"  Moved {moved} memories to 'default' profile")
 
         # Remove from config
@@ -445,10 +451,12 @@ class ProfileManager:
             # Show total memories across all profiles
             if self.db_path.exists():
                 conn = sqlite3.connect(self.db_path)
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM memories")
-                total = cursor.fetchone()[0]
-                conn.close()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT COUNT(*) FROM memories")
+                    total = cursor.fetchone()[0]
+                finally:
+                    conn.close()
                 print(f"Total memories (all profiles): {total}")
         else:
             print(f"Warning: Current profile '{active}' not found in config")
@@ -475,11 +483,13 @@ class ProfileManager:
         # Update profile column in all memories
         if self.db_path.exists():
             conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            cursor.execute("UPDATE memories SET profile = ? WHERE profile = ?", (new_name, old_name))
-            updated = cursor.rowcount
-            conn.commit()
-            conn.close()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE memories SET profile = ? WHERE profile = ?", (new_name, old_name))
+                updated = cursor.rowcount
+                conn.commit()
+            finally:
+                conn.close()
             print(f"  Updated {updated} memories")
 
         # Update config

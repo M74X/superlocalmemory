@@ -28,19 +28,21 @@ class TreeQueriesMixin:
             Nested dictionary representing tree structure
         """
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Build query
-        if project_name:
-            # Find project node
-            cursor.execute('''
-                SELECT id, tree_path FROM memory_tree
-                WHERE node_type = 'project' AND name = ?
-            ''', (project_name,))
-            result = cursor.fetchone()
+            # Build query
+            if project_name:
+                # Find project node
+                cursor.execute('''
+                    SELECT id, tree_path FROM memory_tree
+                    WHERE node_type = 'project' AND name = ?
+                ''', (project_name,))
+                result = cursor.fetchone()
 
-            if not result:
-                conn.close()
+                if not result:
+        finally:
+            conn.close()
                 return {'error': f"Project '{project_name}' not found"}
 
             project_id, project_path = result
@@ -125,13 +127,15 @@ class TreeQueriesMixin:
             List of descendant nodes
         """
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Get node's tree_path
-        cursor.execute('SELECT tree_path FROM memory_tree WHERE id = ?', (node_id,))
-        result = cursor.fetchone()
+            # Get node's tree_path
+            cursor.execute('SELECT tree_path FROM memory_tree WHERE id = ?', (node_id,))
+            result = cursor.fetchone()
 
-        if not result:
+            if not result:
+        finally:
             conn.close()
             return []
 
@@ -176,13 +180,15 @@ class TreeQueriesMixin:
             List of nodes from root to target node
         """
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        # Get node's tree_path
-        cursor.execute('SELECT tree_path FROM memory_tree WHERE id = ?', (node_id,))
-        result = cursor.fetchone()
+            # Get node's tree_path
+            cursor.execute('SELECT tree_path FROM memory_tree WHERE id = ?', (node_id,))
+            result = cursor.fetchone()
 
-        if not result:
+            if not result:
+        finally:
             conn.close()
             return []
 
@@ -223,25 +229,27 @@ class TreeQueriesMixin:
     def get_stats(self) -> Dict[str, Any]:
         """Get tree statistics."""
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
 
-        cursor.execute('SELECT COUNT(*) FROM memory_tree')
-        total_nodes = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM memory_tree')
+            total_nodes = cursor.fetchone()[0]
 
-        cursor.execute('SELECT node_type, COUNT(*) FROM memory_tree GROUP BY node_type')
-        by_type = dict(cursor.fetchall())
+            cursor.execute('SELECT node_type, COUNT(*) FROM memory_tree GROUP BY node_type')
+            by_type = dict(cursor.fetchall())
 
-        cursor.execute('SELECT MAX(depth) FROM memory_tree')
-        max_depth = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT MAX(depth) FROM memory_tree')
+            max_depth = cursor.fetchone()[0] or 0
 
-        cursor.execute('''
-            SELECT SUM(memory_count), SUM(total_size)
-            FROM memory_tree
-            WHERE node_type = 'root'
-        ''')
-        total_memories, total_size = cursor.fetchone()
+            cursor.execute('''
+                SELECT SUM(memory_count), SUM(total_size)
+                FROM memory_tree
+                WHERE node_type = 'root'
+            ''')
+            total_memories, total_size = cursor.fetchone()
 
-        conn.close()
+        finally:
+            conn.close()
 
         return {
             'total_nodes': total_nodes,
