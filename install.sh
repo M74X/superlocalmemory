@@ -214,6 +214,11 @@ if [ -f "${REPO_DIR}/ui_server.py" ]; then
     echo "✓ UI server copied"
 fi
 
+if [ -f "${REPO_DIR}/security_middleware.py" ]; then
+    cp "${REPO_DIR}/security_middleware.py" "${INSTALL_DIR}/"
+    echo "✓ Security middleware copied"
+fi
+
 if [ -d "${REPO_DIR}/ui" ]; then
     mkdir -p "${INSTALL_DIR}/ui/js"
     cp "${REPO_DIR}/ui/index.html" "${INSTALL_DIR}/ui/" 2>/dev/null || true

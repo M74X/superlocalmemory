@@ -122,6 +122,35 @@ if (Test-Path $uiServerPath) {
     Write-Host "OK UI server copied" -ForegroundColor Green
 }
 
+# Copy security middleware (required by ui_server.py)
+$securityMiddlewarePath = Join-Path $REPO_DIR "security_middleware.py"
+if (Test-Path $securityMiddlewarePath) {
+    Copy-Item -Path $securityMiddlewarePath -Destination $INSTALL_DIR -Force
+    Write-Host "OK Security middleware copied" -ForegroundColor Green
+}
+
+# Copy routes (required by ui_server.py)
+$routesDir = Join-Path $REPO_DIR "routes"
+$installRoutesDir = Join-Path $INSTALL_DIR "routes"
+if (Test-Path $routesDir) {
+    if (-not (Test-Path $installRoutesDir)) {
+        New-Item -ItemType Directory -Path $installRoutesDir -Force | Out-Null
+    }
+    Copy-Item -Path (Join-Path $routesDir "*") -Destination $installRoutesDir -Recurse -Force
+    Write-Host "OK Routes copied" -ForegroundColor Green
+}
+
+# Copy UI assets (required by ui_server.py)
+$uiDir = Join-Path $REPO_DIR "ui"
+$installUiDir = Join-Path $INSTALL_DIR "ui"
+if (Test-Path $uiDir) {
+    if (-not (Test-Path $installUiDir)) {
+        New-Item -ItemType Directory -Path $installUiDir -Force | Out-Null
+    }
+    Copy-Item -Path (Join-Path $uiDir "*") -Destination $installUiDir -Recurse -Force
+    Write-Host "OK UI assets copied" -ForegroundColor Green
+}
+
 # Copy MCP server
 $mcpServerPath = Join-Path $REPO_DIR "mcp_server.py"
 if (Test-Path $mcpServerPath) {
