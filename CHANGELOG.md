@@ -16,6 +16,17 @@ SuperLocalMemory V2 - Intelligent local memory system for AI coding assistants.
 
 ---
 
+## [2.8.6] - 2026-03-06
+
+### Fixed
+- Environment variable support across all CLI tools
+- Multi-tool memory database sharing
+
+### Contributors
+- Paweł Przytuła (@pawelel) - Issue #7 and PR #8
+
+---
+
 ## [2.8.3] - 2026-03-05
 
 ### Fixed
