@@ -329,6 +329,32 @@ class V2Migrator:
             except Exception as exc:
                 stats["steps"].append(f"V2 conversion partial: {exc}")
 
+            # Step 4c: Create views for V2 dashboard compatibility
+            try:
+                v2_views = {
+                    "graph_nodes": "_v2_bak_graph_nodes",
+                    "graph_clusters": "_v2_bak_graph_clusters",
+                    "sessions": "_v2_bak_sessions",
+                    "memory_events": "_v2_bak_memory_events",
+                    "identity_patterns": "_v2_bak_identity_patterns",
+                    "pattern_examples": "_v2_bak_pattern_examples",
+                    "creator_metadata": "_v2_bak_creator_metadata",
+                    "agent_registry": "_v2_bak_agent_registry",
+                }
+                view_count = 0
+                for view_name, source in v2_views.items():
+                    try:
+                        conn.execute(f'SELECT 1 FROM "{source}" LIMIT 1')
+                        conn.execute(f'DROP VIEW IF EXISTS "{view_name}"')
+                        conn.execute(f'CREATE VIEW "{view_name}" AS SELECT * FROM "{source}"')
+                        view_count += 1
+                    except Exception:
+                        pass
+                conn.commit()
+                stats["steps"].append(f"Created {view_count} V2 compatibility views")
+            except Exception:
+                pass
+
             conn.close()
             stats["steps"].append("Created V3 schema")
 

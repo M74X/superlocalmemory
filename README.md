@@ -159,6 +159,27 @@ Add to your IDE's MCP config:
 
 24 MCP tools available: `remember`, `recall`, `search`, `fetch`, `list_recent`, `get_status`, `build_graph`, `switch_profile`, `health`, `consistency_check`, `recall_trace`, and more.
 
+### Web Dashboard (17 tabs)
+
+```bash
+slm dashboard    # Opens at http://localhost:8765
+```
+
+The V3 dashboard provides real-time visibility into your memory system:
+
+- **Dashboard** — Mode switcher, health score, quick store/recall
+- **Recall Lab** — Search with per-channel score breakdown (Semantic, BM25, Entity, Temporal)
+- **Knowledge Graph** — Interactive entity relationship visualization
+- **Memories** — Browse, search, and manage stored memories
+- **Trust Dashboard** — Bayesian trust scores per agent with Beta distribution visualization
+- **Math Health** — Fisher-Rao confidence, Sheaf consistency, Langevin lifecycle state
+- **Compliance** — GDPR export/erasure, EU AI Act status, audit trail
+- **Learning** — Adaptive ranking progress, behavioral patterns, outcome tracking
+- **IDE Connections** — Connected AI tools status and configuration
+- **Settings** — Mode, provider, auto-capture/recall configuration
+
+> The dashboard runs locally at `http://localhost:8765`. No data leaves your machine.
+
 ---
 
 ## V3 Engine Features

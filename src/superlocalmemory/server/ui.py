@@ -193,7 +193,20 @@ def create_app() -> FastAPI:
 
     @application.on_event("startup")
     async def startup_event():
-        """Register Event Bus listener for SSE bridge on startup."""
+        """Initialize V3 engine and event bus on startup."""
+        # Initialize V3 engine for dashboard API routes
+        try:
+            from superlocalmemory.core.config import SLMConfig
+            from superlocalmemory.core.engine import MemoryEngine
+            config = SLMConfig.load()
+            engine = MemoryEngine(config)
+            engine.initialize()
+            application.state.engine = engine
+            logger.info("V3 engine initialized for dashboard")
+        except Exception as exc:
+            logger.warning("V3 engine init failed: %s (V3 API routes will be unavailable)", exc)
+            application.state.engine = None
+
         register_event_listener()
 
     return application
