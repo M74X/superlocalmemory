@@ -29,6 +29,7 @@ def dispatch(args: Namespace) -> None:
         "status": cmd_status,
         "health": cmd_health,
         "trace": cmd_trace,
+        "mcp": cmd_mcp,
         "warmup": cmd_warmup,
         "dashboard": cmd_dashboard,
         "profile": cmd_profile,
@@ -216,6 +217,13 @@ def cmd_trace(args: Namespace) -> None:
         if hasattr(r, "channel_scores") and r.channel_scores:
             for ch, sc in r.channel_scores.items():
                 print(f"       {ch}: {sc:.3f}")
+
+
+def cmd_mcp(_args: Namespace) -> None:
+    """Start the V3 MCP server (stdio transport for IDE integration)."""
+    from superlocalmemory.mcp.server import server
+
+    server.run(transport="stdio")
 
 
 def cmd_warmup(_args: Namespace) -> None:

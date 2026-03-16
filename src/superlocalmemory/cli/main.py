@@ -67,6 +67,9 @@ def main() -> None:
     trace_p = sub.add_parser("trace", help="Recall with channel breakdown")
     trace_p.add_argument("query", help="Search query")
 
+    # MCP server (for IDE integration)
+    sub.add_parser("mcp", help="Start MCP server (stdio transport for IDE integration)")
+
     # Warmup (pre-download model)
     sub.add_parser("warmup", help="Pre-download embedding model (~500MB)")
 
