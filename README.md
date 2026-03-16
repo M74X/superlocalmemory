@@ -38,8 +38,8 @@ SuperLocalMemory gives AI assistants persistent, structured memory that survives
 
 | Metric | Score | Context |
 |:-------|:-----:|:--------|
+| LoCoMo (Mode C, full power) | **87.7%** | On conv-30, 81 scored questions |
 | LoCoMo (Mode A, zero-LLM) | **62.3%** | Highest zero-LLM score. No cloud dependency. |
-| LoCoMo (Mode C, full) | **~78%** | Competitive with funded systems ($10M+) |
 | Math layer improvement | **+12.7pp** | Average gain from mathematical foundations |
 | Multi-hop improvement | **+12pp** | 50% vs 38% (math on vs off) |
 
@@ -236,7 +236,7 @@ Evaluated on the [LoCoMo benchmark](https://arxiv.org/abs/2402.09714) (Long Conv
 | EverMemOS | 92.3% | Yes | No | No |
 | MemMachine | 91.7% | Yes | No | No |
 | Hindsight | 89.6% | Yes | No | No |
-| **SLM V3 Mode C** | **~78%** | Optional | **Yes** | Partial |
+| **SLM V3 Mode C** | **87.7%** | Optional | **Yes** | Partial |
 | **SLM V3 Mode A** | **62.3%** | **No** | **Yes** | **Yes** |
 | Mem0 ($24M) | 34.2% F1 | Yes | Partial | No |
 
