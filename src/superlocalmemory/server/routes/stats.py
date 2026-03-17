@@ -56,7 +56,7 @@ async def get_stats():
             total_graph_edges = 0
             try:
                 cursor.execute(
-                    "SELECT COUNT(*) as total FROM kg_edges WHERE profile_id = ?",
+                    "SELECT COUNT(*) as total FROM graph_edges WHERE profile_id = ?",
                     (active_profile,),
                 )
                 total_graph_edges = cursor.fetchone()['total']

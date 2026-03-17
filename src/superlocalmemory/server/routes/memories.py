@@ -104,7 +104,7 @@ def _fetch_edges_v3(cursor, profile: str, fact_ids: list) -> list:
         cursor.execute(f"""
             SELECT source_id as source, target_id as target,
                    weight, edge_type as relationship_type
-            FROM kg_edges WHERE profile_id = ?
+            FROM graph_edges WHERE profile_id = ?
               AND source_id IN ({ph}) AND target_id IN ({ph})
             ORDER BY weight DESC
         """, [profile] + fact_ids + fact_ids)
@@ -248,7 +248,7 @@ async def get_graph(
         cursor = conn.cursor()
         active_profile = get_active_profile()
 
-        use_v3 = _has_table(cursor, 'kg_edges')
+        use_v3 = _has_table(cursor, 'atomic_facts')
 
         nodes, links, clusters = _fetch_graph_data(
             cursor, active_profile, use_v3, min_importance, max_nodes,
