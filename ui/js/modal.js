@@ -176,6 +176,63 @@ function openMemoryDetail(mem, source) {
             actionsDiv.appendChild(filterBtn);
         }
 
+        // Edit button — always available
+        var editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-outline-warning btn-sm';
+        editBtn.innerHTML = '<i class="bi bi-pencil"></i> Edit';
+        editBtn.onclick = function() {
+            var currentText = contentDiv.textContent;
+            var textarea = document.createElement('textarea');
+            textarea.className = 'form-control mb-2';
+            textarea.rows = 4;
+            textarea.value = currentText;
+            contentDiv.textContent = '';
+            contentDiv.appendChild(textarea);
+            var saveBtn = document.createElement('button');
+            saveBtn.className = 'btn btn-sm btn-success me-1';
+            saveBtn.textContent = 'Save';
+            saveBtn.onclick = function() {
+                var newContent = textarea.value.trim();
+                if (!newContent) return;
+                fetch('/api/memories/' + encodeURIComponent(mem.id), {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content: newContent})
+                }).then(function(r) { return r.json(); }).then(function(d) {
+                    if (d.success) {
+                        contentDiv.textContent = newContent;
+                        mem.content = newContent;
+                        if (typeof showToast === 'function') showToast('Memory updated');
+                    }
+                });
+            };
+            var cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn btn-sm btn-secondary';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onclick = function() { contentDiv.textContent = currentText; };
+            contentDiv.appendChild(saveBtn);
+            contentDiv.appendChild(cancelBtn);
+        };
+        actionsDiv.appendChild(editBtn);
+
+        // Delete button — always available
+        var deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-outline-danger btn-sm';
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete';
+        deleteBtn.onclick = function() {
+            if (!confirm('Delete this memory? This cannot be undone.')) return;
+            fetch('/api/memories/' + encodeURIComponent(mem.id), {method: 'DELETE'})
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.success) {
+                        modal.hide();
+                        if (typeof showToast === 'function') showToast('Memory deleted');
+                        if (typeof loadMemories === 'function') setTimeout(loadMemories, 300);
+                    }
+                });
+        };
+        actionsDiv.appendChild(deleteBtn);
+
         body.appendChild(actionsDiv);
     }
 

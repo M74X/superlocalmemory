@@ -282,6 +282,67 @@ def register_core_tools(server, get_engine: Callable) -> None:
             return {"success": False, "error": str(exc)}
 
     @server.tool()
+    async def delete_memory(fact_id: str, agent_id: str = "mcp_client") -> dict:
+        """Delete a specific memory by exact fact ID.
+
+        Security note: This is a destructive operation. All deletions are
+        logged with the calling agent_id for audit trail. Use get_status or
+        list_recent to find fact_ids before deleting.
+
+        Args:
+            fact_id: Exact fact ID to delete (from recall or list_recent results).
+            agent_id: Identifier of the calling agent (logged for audit).
+        """
+        try:
+            from superlocalmemory.core.worker_pool import WorkerPool
+            pool = WorkerPool.shared()
+            result = pool._send({
+                "cmd": "delete_memory",
+                "fact_id": fact_id,
+                "agent_id": agent_id,
+            })
+            if result.get("ok"):
+                logger.info("Memory deleted: %s by agent: %s", fact_id[:16], agent_id)
+                return {"success": True, "deleted": fact_id, "agent_id": agent_id}
+            return {"success": False, "error": result.get("error", "Delete failed")}
+        except Exception as exc:
+            logger.exception("delete_memory failed")
+            return {"success": False, "error": str(exc)}
+
+    @server.tool()
+    async def update_memory(
+        fact_id: str, content: str, agent_id: str = "mcp_client",
+    ) -> dict:
+        """Update the content of a specific memory by exact fact ID.
+
+        Security note: All updates are logged with the calling agent_id.
+        The fact_id must belong to the active profile.
+
+        Args:
+            fact_id: Exact fact ID to update.
+            content: New content for the memory (cannot be empty).
+            agent_id: Identifier of the calling agent (logged for audit).
+        """
+        try:
+            if not content or not content.strip():
+                return {"success": False, "error": "content cannot be empty"}
+            from superlocalmemory.core.worker_pool import WorkerPool
+            pool = WorkerPool.shared()
+            result = pool._send({
+                "cmd": "update_memory",
+                "fact_id": fact_id,
+                "content": content.strip(),
+                "agent_id": agent_id,
+            })
+            if result.get("ok"):
+                logger.info("Memory updated: %s by agent: %s", fact_id[:16], agent_id)
+                return {"success": True, "fact_id": fact_id, "content": content.strip()}
+            return {"success": False, "error": result.get("error", "Update failed")}
+        except Exception as exc:
+            logger.exception("update_memory failed")
+            return {"success": False, "error": str(exc)}
+
+    @server.tool()
     async def get_attribution() -> dict:
         """Get system attribution: author, version, license, and provenance metadata."""
         return {

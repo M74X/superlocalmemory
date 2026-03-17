@@ -455,3 +455,61 @@ async def get_memory_facts(request: Request, memory_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+@router.delete("/api/memories/{fact_id}")
+async def delete_memory(request: Request, fact_id: str):
+    """Delete a specific memory (atomic fact) by ID."""
+    try:
+        conn = get_db_connection()
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+        active_profile = get_active_profile()
+        # Verify it exists and belongs to this profile
+        cursor.execute(
+            "SELECT fact_id FROM atomic_facts WHERE fact_id = ? AND profile_id = ?",
+            (fact_id, active_profile),
+        )
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Memory not found")
+        cursor.execute("DELETE FROM atomic_facts WHERE fact_id = ?", (fact_id,))
+        conn.commit()
+        conn.close()
+        return {"success": True, "deleted": fact_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete error: {str(e)}")
+
+
+@router.patch("/api/memories/{fact_id}")
+async def edit_memory(request: Request, fact_id: str):
+    """Edit the content of a specific memory (atomic fact)."""
+    try:
+        body = await request.json()
+        new_content = (body.get("content") or "").strip()
+        if not new_content:
+            raise HTTPException(status_code=400, detail="content is required")
+        conn = get_db_connection()
+        conn.row_factory = dict_factory
+        cursor = conn.cursor()
+        active_profile = get_active_profile()
+        cursor.execute(
+            "SELECT fact_id FROM atomic_facts WHERE fact_id = ? AND profile_id = ?",
+            (fact_id, active_profile),
+        )
+        if not cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=404, detail="Memory not found")
+        cursor.execute(
+            "UPDATE atomic_facts SET content = ? WHERE fact_id = ?",
+            (new_content, fact_id),
+        )
+        conn.commit()
+        conn.close()
+        return {"success": True, "fact_id": fact_id, "content": new_content}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Edit error: {str(e)}")

@@ -119,10 +119,18 @@ def main() -> None:
     recall_p.add_argument("query", help="Search query")
     recall_p.add_argument("--limit", type=int, default=10, help="Max results (default 10)")
 
-    forget_p = sub.add_parser("forget", help="Delete memories matching a query")
+    forget_p = sub.add_parser("forget", help="Delete memories matching a query (fuzzy)")
     forget_p.add_argument("query", help="Query to match for deletion")
 
-    list_p = sub.add_parser("list", help="List recent memories chronologically")
+    delete_p = sub.add_parser("delete", help="Delete a specific memory by ID (precise)")
+    delete_p.add_argument("fact_id", help="Exact fact ID to delete")
+    delete_p.add_argument("--yes", "-y", action="store_true", help="Skip confirmation")
+
+    update_p = sub.add_parser("update", help="Edit the content of a specific memory by ID")
+    update_p.add_argument("fact_id", help="Exact fact ID to update")
+    update_p.add_argument("content", help="New content for the memory")
+
+    list_p = sub.add_parser("list", help="List recent memories chronologically (shows IDs for delete/update)")
     list_p.add_argument(
         "--limit", "-n", type=int, default=20, help="Number of entries (default 20)",
     )

@@ -78,6 +78,25 @@ def _handle_store(content: str, metadata: dict) -> dict:
     engine = _get_engine()
     session_id = metadata.pop("session_id", "")
     fact_ids = engine.store(content, session_id=session_id, metadata=metadata)
+
+    # Generate and persist summary immediately after store (Mode A heuristic, B/C LLM)
+    if fact_ids:
+        try:
+            from superlocalmemory.core.summarizer import Summarizer
+            summarizer = Summarizer(engine._config)
+            summary = summarizer.summarize_cluster([{"content": content}])
+            if summary:
+                # Get the memory_id from the first stored fact
+                rows = engine._db.execute(
+                    "SELECT memory_id FROM atomic_facts WHERE fact_id = ? LIMIT 1",
+                    (fact_ids[0],),
+                )
+                if rows:
+                    memory_id = dict(rows[0])["memory_id"]
+                    engine._db.update_memory_summary(memory_id, summary)
+        except Exception:
+            pass  # Summary is non-critical
+
     return {"ok": True, "fact_ids": fact_ids, "count": len(fact_ids)}
 
 
@@ -105,6 +124,49 @@ def _handle_get_memory_facts(memory_id: str) -> dict:
         "facts": fact_list,
         "fact_count": len(fact_list),
     }
+
+
+def _handle_delete_memory(fact_id: str, agent_id: str = "system") -> dict:
+    """Delete a specific atomic fact by ID with audit logging."""
+    engine = _get_engine()
+    pid = engine.profile_id
+    rows = engine._db.execute(
+        "SELECT content FROM atomic_facts WHERE fact_id = ? AND profile_id = ? LIMIT 1",
+        (fact_id, pid),
+    )
+    if not rows:
+        return {"ok": False, "error": f"Memory {fact_id} not found"}
+    content_preview = dict(rows[0]).get("content", "")[:80]
+    engine._db.delete_fact(fact_id)
+    # Audit log
+    import logging as _logging
+    _logging.getLogger("superlocalmemory.audit").info(
+        "DELETE fact_id=%s by agent=%s content=%s", fact_id[:16], agent_id, content_preview,
+    )
+    return {"ok": True, "deleted": fact_id, "content_preview": content_preview}
+
+
+def _handle_update_memory(fact_id: str, content: str, agent_id: str = "system") -> dict:
+    """Update content of a specific atomic fact with audit logging."""
+    engine = _get_engine()
+    pid = engine.profile_id
+    rows = engine._db.execute(
+        "SELECT content FROM atomic_facts WHERE fact_id = ? AND profile_id = ? LIMIT 1",
+        (fact_id, pid),
+    )
+    if not rows:
+        return {"ok": False, "error": f"Memory {fact_id} not found"}
+    old_content = dict(rows[0]).get("content", "")[:80]
+    engine._db.execute(
+        "UPDATE atomic_facts SET content = ? WHERE fact_id = ?",
+        (content, fact_id),
+    )
+    import logging as _logging
+    _logging.getLogger("superlocalmemory.audit").info(
+        "UPDATE fact_id=%s by agent=%s old=%s new=%s",
+        fact_id[:16], agent_id, old_content, content[:80],
+    )
+    return {"ok": True, "fact_id": fact_id, "content": content}
 
 
 def _handle_summarize(texts: list[str], mode: str) -> dict:
@@ -166,6 +228,18 @@ def _worker_main() -> None:
                 _respond(result)
             elif cmd == "store":
                 result = _handle_store(req.get("content", ""), req.get("metadata", {}))
+                _respond(result)
+            elif cmd == "delete_memory":
+                result = _handle_delete_memory(
+                    req.get("fact_id", ""), req.get("agent_id", "system"),
+                )
+                _respond(result)
+            elif cmd == "update_memory":
+                result = _handle_update_memory(
+                    req.get("fact_id", ""),
+                    req.get("content", ""),
+                    req.get("agent_id", "system"),
+                )
                 _respond(result)
             elif cmd == "get_memory_facts":
                 result = _handle_get_memory_facts(req.get("memory_id", ""))

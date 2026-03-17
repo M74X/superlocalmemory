@@ -128,6 +128,32 @@ class DatabaseManager:
         )
         return record.memory_id
 
+    def update_memory_summary(self, memory_id: str, summary: str) -> None:
+        """Store a generated summary for a memory record."""
+        try:
+            self.execute(
+                "UPDATE memories SET metadata_json = json_set("
+                "  COALESCE(metadata_json, '{}'), '$.summary', ?"
+                ") WHERE memory_id = ?",
+                (summary, memory_id),
+            )
+        except Exception:
+            pass  # Non-critical — summary is enhancement only
+
+    def get_memory_summary(self, memory_id: str) -> str:
+        """Retrieve stored summary for a memory, or empty string."""
+        try:
+            rows = self.execute(
+                "SELECT json_extract(metadata_json, '$.summary') as s "
+                "FROM memories WHERE memory_id = ?",
+                (memory_id,),
+            )
+            if rows:
+                return dict(rows[0]).get("s") or ""
+        except Exception:
+            pass
+        return ""
+
     def store_fact(self, fact: AtomicFact) -> str:
         """Persist an atomic fact. Returns fact_id."""
         self.execute(

@@ -27,6 +27,8 @@ def dispatch(args: Namespace) -> None:
         "remember": cmd_remember,
         "recall": cmd_recall,
         "forget": cmd_forget,
+        "delete": cmd_delete,
+        "update": cmd_update,
         "status": cmd_status,
         "health": cmd_health,
         "trace": cmd_trace,
@@ -197,6 +199,72 @@ def cmd_forget(args: Namespace) -> None:
         print(f"Deleted {len(matches)} memories.")
     else:
         print("Cancelled.")
+
+
+def cmd_delete(args: Namespace) -> None:
+    """Delete a specific memory by exact fact ID."""
+    from superlocalmemory.core.config import SLMConfig
+    from superlocalmemory.core.engine import MemoryEngine
+
+    config = SLMConfig.load()
+    engine = MemoryEngine(config)
+    engine.initialize()
+
+    fact_id = args.fact_id.strip()
+    # Look up the memory first so user can confirm
+    rows = engine._db.execute(
+        "SELECT content FROM atomic_facts WHERE fact_id = ? AND profile_id = ?",
+        (fact_id, engine.profile_id),
+    )
+    if not rows:
+        print(f"Memory not found: {fact_id}")
+        return
+
+    content_preview = dict(rows[0]).get("content", "")[:120]
+    print(f"Memory: {content_preview}")
+
+    if not getattr(args, "yes", False):
+        confirm = input("Delete this memory? [y/N] ").strip().lower()
+        if confirm not in ("y", "yes"):
+            print("Cancelled.")
+            return
+
+    engine._db.delete_fact(fact_id)
+    print(f"Deleted: {fact_id}")
+
+
+def cmd_update(args: Namespace) -> None:
+    """Update the content of a specific memory by exact fact ID."""
+    from superlocalmemory.core.config import SLMConfig
+    from superlocalmemory.core.engine import MemoryEngine
+
+    config = SLMConfig.load()
+    engine = MemoryEngine(config)
+    engine.initialize()
+
+    fact_id = args.fact_id.strip()
+    new_content = args.content.strip()
+    if not new_content:
+        print("Error: content cannot be empty")
+        return
+
+    rows = engine._db.execute(
+        "SELECT content FROM atomic_facts WHERE fact_id = ? AND profile_id = ?",
+        (fact_id, engine.profile_id),
+    )
+    if not rows:
+        print(f"Memory not found: {fact_id}")
+        return
+
+    old_content = dict(rows[0]).get("content", "")
+    print(f"Old: {old_content[:100]}")
+    print(f"New: {new_content[:100]}")
+
+    engine._db.execute(
+        "UPDATE atomic_facts SET content = ? WHERE fact_id = ?",
+        (new_content, fact_id),
+    )
+    print(f"Updated: {fact_id}")
 
 
 def cmd_status(_args: Namespace) -> None:
