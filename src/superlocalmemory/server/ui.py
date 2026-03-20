@@ -26,30 +26,32 @@ logger = logging.getLogger(__name__)
 
 
 def _get_version() -> str:
-    """Read version from package metadata, package.json, or pyproject.toml."""
+    """Read version from package.json (npm), pyproject.toml, or metadata."""
     import json as _json
-    # 1. Try importlib.metadata (works when pip-installed)
-    try:
-        from importlib.metadata import version
-        return version("superlocalmemory")
-    except Exception:
-        pass
-    # 2. Try package.json (works when npm-installed)
     pkg_root = Path(__file__).resolve().parent.parent.parent.parent
+    # 1. Try package.json FIRST (source of truth for npm installs)
     try:
         pkg_json = pkg_root / "package.json"
         if pkg_json.exists():
             with open(pkg_json) as f:
-                return _json.load(f).get("version", "")
+                v = _json.load(f).get("version", "")
+                if v:
+                    return v
     except Exception:
         pass
-    # 3. Try pyproject.toml
+    # 2. Try pyproject.toml (source of truth for pip installs)
     try:
         import tomllib
         toml_path = pkg_root / "pyproject.toml"
         if toml_path.exists():
             with open(toml_path, "rb") as f:
                 return tomllib.load(f)["project"]["version"]
+    except Exception:
+        pass
+    # 3. Fallback to importlib.metadata
+    try:
+        from importlib.metadata import version
+        return version("superlocalmemory")
     except Exception:
         pass
     return "unknown"
