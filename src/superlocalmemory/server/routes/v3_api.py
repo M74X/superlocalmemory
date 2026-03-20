@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from superlocalmemory.server.ui import SLM_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -27,21 +28,26 @@ async def dashboard(request: Request):
         from superlocalmemory.core.config import SLMConfig
         config = SLMConfig.load()
 
-        # Get basic stats from engine if available
-        engine = getattr(request.app.state, "engine", None)
+        # Read stats directly from SQLite (dashboard doesn't load engine)
+        import sqlite3
         memory_count = 0
         fact_count = 0
-        if engine and engine._db:
+        db_path = config.base_dir / "memory.db"
+        if db_path.exists():
             try:
-                rows = engine._db.execute("SELECT COUNT(*) FROM atomic_facts")
-                if rows:
-                    fact_count = rows[0][0] if isinstance(rows[0], (list, tuple)) else dict(rows[0]).get("COUNT(*)", 0)
-            except Exception:
-                pass
-            try:
-                rows = engine._db.execute("SELECT COUNT(*) FROM memories")
-                if rows:
-                    memory_count = rows[0][0] if isinstance(rows[0], (list, tuple)) else dict(rows[0]).get("COUNT(*)", 0)
+                conn = sqlite3.connect(str(db_path))
+                cursor = conn.cursor()
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM atomic_facts")
+                    fact_count = cursor.fetchone()[0]
+                except Exception:
+                    pass
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM memories")
+                    memory_count = cursor.fetchone()[0]
+                except Exception:
+                    pass
+                conn.close()
             except Exception:
                 pass
 
@@ -54,7 +60,7 @@ async def dashboard(request: Request):
             "fact_count": fact_count,
             "profile": config.active_profile,
             "base_dir": str(config.base_dir),
-            "version": "3.0.0",
+            "version": SLM_VERSION,
         }
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
