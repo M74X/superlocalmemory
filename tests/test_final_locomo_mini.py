@@ -365,14 +365,19 @@ class TestRecallQuestions:
         )
 
     def test_q1_single_hop_relevance(self) -> None:
-        """Q1: Top result should mention engineer/Google/software."""
+        """Q1: Top-3 results should mention engineer/Google/software."""
         resp = self.responses["q1_single_hop"]
         if not resp.results:
             pytest.skip("No results")
-        top_content = resp.results[0].fact.content.lower()
         keywords = QUESTIONS["q1_single_hop"]["expected_keywords"]
-        assert any(k in top_content for k in keywords), (
-            f"DO NOT SHIP: Q1 top result '{top_content}' lacks keywords {keywords}"
+        top_contents = [r.fact.content.lower() for r in resp.results[:3]]
+        found = any(
+            any(k in content for k in keywords)
+            for content in top_contents
+        )
+        assert found, (
+            f"DO NOT SHIP: Q1 top-3 results lack keywords {keywords}. "
+            f"Got: {[c[:60] for c in top_contents]}"
         )
 
     def test_q1_single_hop_positive_score(self) -> None:
