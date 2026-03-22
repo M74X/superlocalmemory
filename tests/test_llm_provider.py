@@ -42,7 +42,11 @@ def test_ollama_provider_no_key_needed():
     config = LLMConfig(provider="ollama", model="llama3.2")
     backbone = LLMBackbone(config)
     assert backbone.provider == "ollama"
-    assert backbone.is_available()
+    # is_available() now checks if the model is warm in Ollama (no cold-load).
+    # In CI there's no Ollama, so it returns False — that's correct behavior.
+    # Verify the provider is configured (no key needed) by checking internals.
+    assert backbone._api_key == ""
+    assert backbone._provider == "ollama"
 
 
 def test_no_provider_is_not_available():
