@@ -169,7 +169,7 @@ class WorkerPool:
 
                 resp_line = self._proc.stdout.readline()
                 if not resp_line:
-                    logger.warning("Worker returned empty, restarting")
+                    logger.warning("Worker returned empty, restarting. Run 'slm doctor' to diagnose.")
                     self._kill()
                     return {"ok": False, "error": "Worker died"}
 
@@ -177,7 +177,7 @@ class WorkerPool:
                 return json.loads(resp_line)
 
             except (BrokenPipeError, OSError, json.JSONDecodeError) as exc:
-                logger.warning("Worker communication failed: %s", exc)
+                logger.warning("Worker communication failed: %s. Run 'slm doctor' to diagnose.", exc)
                 self._kill()
                 return {"ok": False, "error": str(exc)}
 
@@ -207,7 +207,7 @@ class WorkerPool:
             )
             logger.info("Recall worker spawned (PID %d)", self._proc.pid)
         except Exception as exc:
-            logger.error("Failed to spawn recall worker: %s", exc)
+            logger.error("Failed to spawn recall worker: %s. Run 'slm doctor' to diagnose. Python: %s", exc, sys.executable)
             self._proc = None
 
     def _kill(self) -> None:

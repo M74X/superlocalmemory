@@ -366,7 +366,7 @@ class SLMConfig:
                 ),
                 llm=LLMConfig(
                     provider=llm_provider or "ollama",
-                    model=llm_model or "phi3:mini",
+                    model=llm_model or "llama3.2",
                     api_base=llm_api_base or "http://localhost:11434",
                     api_key=llm_api_key or "",
                 ),

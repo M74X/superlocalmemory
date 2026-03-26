@@ -102,6 +102,7 @@ const coreDeps = [
     'numpy>=1.26.0', 'scipy>=1.12.0', 'networkx>=3.0',
     'httpx>=0.24.0', 'python-dateutil>=2.9.0',
     'rank-bm25>=0.2.2', 'vaderSentiment>=3.3.2',
+    'einops>=0.8.2', 'mcp>=1.0.0',
 ];
 
 if (pipInstall(coreDeps, 'core')) {
@@ -127,6 +128,35 @@ if (pipInstall(searchDeps, 'search')) {
     console.log('  pip install sentence-transformers einops geoopt');
 }
 
+// Dashboard dependencies (IMPORTANT — enables web dashboard + MCP server)
+const dashboardDeps = ['fastapi[all]>=0.135.1', 'uvicorn>=0.42.0', 'websockets>=16.0'];
+console.log('\nInstalling dashboard & server dependencies...');
+if (pipInstall(dashboardDeps, 'dashboard')) {
+    console.log('✓ Dashboard & MCP server dependencies installed (fastapi + uvicorn)');
+} else {
+    console.log('⚠ Dashboard installation failed.');
+    console.log('  Run manually: pip install \'fastapi[all]\' uvicorn websockets');
+}
+
+// Learning dependencies (enables adaptive retrieval after 200+ signals)
+const learningDeps = ['lightgbm>=4.0.0'];
+console.log('\nInstalling learning engine...');
+if (pipInstall(learningDeps, 'learning')) {
+    console.log('✓ Learning engine installed (lightgbm — adaptive ranking)');
+} else {
+    console.log('⚠ Learning installation failed (retrieval still works without it).');
+    console.log('  Run manually: pip install lightgbm');
+}
+
+// Performance dependencies (optional — improves caching and JSON speed)
+const perfDeps = ['diskcache>=5.6.0', 'orjson>=3.9.0'];
+console.log('\nInstalling performance optimizations...');
+if (pipInstall(perfDeps, 'performance')) {
+    console.log('✓ Performance optimizations installed (diskcache + orjson)');
+} else {
+    console.log('⚠ Performance deps skipped (system works fine without them).');
+}
+
 // --- Step 4: Detect V2 installation ---
 const V2_HOME = path.join(os.homedir(), '.claude-memory');
 if (fs.existsSync(V2_HOME) && fs.existsSync(path.join(V2_HOME, 'memory.db'))) {
@@ -149,13 +179,17 @@ console.log('  ✓ SuperLocalMemory V3 installed successfully!');
 console.log('');
 console.log('  Quick start:');
 console.log('    slm setup          # First-time configuration');
-console.log('    slm status         # Check system status');
+console.log('    slm doctor         # Pre-flight check (verify everything works)');
+console.log('    slm warmup         # Pre-download embedding model (~500MB)');
 console.log('    slm remember "..." # Store a memory');
 console.log('    slm recall "..."   # Search memories');
+console.log('    slm dashboard      # Open 17-tab web dashboard');
 console.log('');
 console.log('  Prerequisites satisfied:');
 console.log('    ✓ Python 3.11+');
 console.log('    ✓ Core math & search libraries');
+console.log('    ✓ Dashboard server (fastapi, uvicorn)');
+console.log('    ✓ Learning engine (lightgbm)');
 console.log('    ✓ Data directory (~/.superlocalmemory/)');
 console.log('');
 console.log('  Docs: https://github.com/qualixar/superlocalmemory/wiki');

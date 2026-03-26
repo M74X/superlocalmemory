@@ -32,6 +32,7 @@ def dispatch(args: Namespace) -> None:
         "update": cmd_update,
         "status": cmd_status,
         "health": cmd_health,
+        "doctor": cmd_doctor,
         "trace": cmd_trace,
         "mcp": cmd_mcp,
         "warmup": cmd_warmup,
@@ -592,6 +593,254 @@ def cmd_health(args: Namespace) -> None:
     print(f"  Mode: {config.mode.value.upper()}")
 
 
+def cmd_doctor(args: Namespace) -> None:
+    """Comprehensive pre-flight check — verify everything works."""
+    import shutil
+    from pathlib import Path
+
+    use_json = getattr(args, "json", False)
+    checks: list[dict] = []
+    passed = warned = failed = 0
+
+    def _check(name: str, status: str, detail: str, fix: str = ""):
+        nonlocal passed, warned, failed
+        checks.append({"name": name, "status": status, "detail": detail, "fix": fix})
+        if status == "PASS":
+            passed += 1
+        elif status == "WARN":
+            warned += 1
+        else:
+            failed += 1
+        if not use_json:
+            tag = {"PASS": "[PASS]", "WARN": "[WARN]", "FAIL": "[FAIL]"}[status]
+            line = f"  {tag} {name}: {detail}"
+            if fix:
+                line += f"\n         Fix: {fix}"
+            print(line)
+
+    if not use_json:
+        print("SuperLocalMemory V3 — Doctor (Pre-flight Check)")
+        print("=" * 50)
+        print()
+
+    # 1. Python version
+    v = sys.version_info
+    if v >= (3, 11):
+        _check("Python", "PASS", f"{v.major}.{v.minor}.{v.micro} (>= 3.11)")
+    else:
+        _check("Python", "FAIL", f"{v.major}.{v.minor}.{v.micro} (need >= 3.11)",
+               "Install Python 3.11+ from https://python.org/downloads/")
+
+    # 2. Core deps
+    core_modules = {
+        "numpy": "numpy", "scipy": "scipy", "networkx": "networkx",
+        "httpx": "httpx", "dateutil": "python-dateutil",
+        "rank_bm25": "rank-bm25", "vaderSentiment": "vadersentiment",
+        "einops": "einops",
+    }
+    core_ok, core_versions = [], []
+    for mod, pkg in core_modules.items():
+        try:
+            m = __import__(mod)
+            ver = getattr(m, "__version__", "?")
+            core_ok.append(mod)
+            core_versions.append(f"{mod} {ver}")
+        except ImportError:
+            pass
+    if len(core_ok) == len(core_modules):
+        _check("Core deps", "PASS", ", ".join(core_versions[:4]) + "...")
+    else:
+        missing = set(core_modules) - set(core_ok)
+        _check("Core deps", "FAIL", f"Missing: {', '.join(missing)}",
+               "pip install " + " ".join(core_modules[m] for m in missing))
+
+    # 3. Search deps
+    search_mods = {"sentence_transformers": "sentence-transformers", "torch": "torch",
+                   "sklearn": "scikit-learn", "geoopt": "geoopt"}
+    search_ok = []
+    for mod, pkg in search_mods.items():
+        try:
+            __import__(mod)
+            search_ok.append(mod)
+        except ImportError:
+            pass
+    if len(search_ok) == len(search_mods):
+        _check("Search deps", "PASS", "sentence-transformers, torch, sklearn, geoopt")
+    else:
+        missing = set(search_mods) - set(search_ok)
+        _check("Search deps", "WARN", f"Missing: {', '.join(missing)}",
+               "pip install 'superlocalmemory[search]'")
+
+    # 4. Dashboard deps
+    dash_ok = True
+    for mod in ["fastapi", "uvicorn", "websockets"]:
+        try:
+            __import__(mod)
+        except ImportError:
+            dash_ok = False
+            break
+    if dash_ok:
+        _check("Dashboard deps", "PASS", "fastapi, uvicorn, websockets")
+    else:
+        _check("Dashboard deps", "WARN", "Missing dashboard deps",
+               "pip install 'fastapi[all]' uvicorn websockets")
+
+    # 5. Learning deps
+    try:
+        import lightgbm
+        _check("Learning deps", "PASS", f"lightgbm {lightgbm.__version__}")
+    except ImportError:
+        _check("Learning deps", "WARN", "lightgbm not installed",
+               "pip install lightgbm")
+    except OSError as exc:
+        _check("Learning deps", "WARN", f"lightgbm installed but broken: {exc}",
+               "brew install libomp && pip install --force-reinstall lightgbm")
+
+    # 6. Performance deps
+    perf_ok = []
+    for mod in ["diskcache", "orjson"]:
+        try:
+            __import__(mod)
+            perf_ok.append(mod)
+        except ImportError:
+            pass
+    if len(perf_ok) == 2:
+        _check("Performance deps", "PASS", "diskcache, orjson")
+    else:
+        missing = {"diskcache", "orjson"} - set(perf_ok)
+        _check("Performance deps", "WARN", f"Missing: {', '.join(missing)}",
+               "pip install diskcache orjson")
+
+    # 7. Embedding worker functional test
+    try:
+        import subprocess as _sp
+        import json as _json
+
+        env = {
+            **__import__("os").environ,
+            "CUDA_VISIBLE_DEVICES": "",
+            "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.0",
+            "TOKENIZERS_PARALLELISM": "false",
+            "TORCH_DEVICE": "cpu",
+        }
+        proc = _sp.Popen(
+            [sys.executable, "-m", "superlocalmemory.core.embedding_worker"],
+            stdin=_sp.PIPE, stdout=_sp.PIPE, stderr=_sp.DEVNULL,
+            text=True, bufsize=1, env=env,
+        )
+        proc.stdin.write(_json.dumps({"cmd": "ping"}) + "\n")
+        proc.stdin.flush()
+
+        import select as _sel
+        ready, _, _ = _sel.select([proc.stdout], [], [], 30)
+        if ready:
+            resp = _json.loads(proc.stdout.readline())
+            if resp.get("ok"):
+                _check("Embedding worker", "PASS",
+                       f"responsive (PID {proc.pid}, Python {sys.executable})")
+            else:
+                _check("Embedding worker", "FAIL",
+                       f"error: {resp.get('error', 'unknown')}",
+                       "pip install sentence-transformers einops torch")
+        else:
+            _check("Embedding worker", "FAIL", "timed out (30s)",
+                   "slm warmup")
+        proc.stdin.write(_json.dumps({"cmd": "quit"}) + "\n")
+        proc.stdin.flush()
+        proc.wait(timeout=5)
+    except FileNotFoundError:
+        _check("Embedding worker", "FAIL", "embedding_worker module not found",
+               "Reinstall: npm install -g superlocalmemory")
+    except Exception as exc:
+        _check("Embedding worker", "FAIL", str(exc),
+               "slm warmup")
+
+    # 8. Ollama connectivity (Mode B only)
+    try:
+        from superlocalmemory.core.config import SLMConfig
+        config = SLMConfig.load()
+        if config.mode.value == "b":
+            import httpx
+            try:
+                resp = httpx.get(
+                    f"{config.llm.api_base}/api/tags", timeout=5.0,
+                )
+                if resp.status_code == 200:
+                    models = [m["name"].split(":")[0] for m in resp.json().get("models", [])]
+                    has_llm = config.llm.model.split(":")[0] in models
+                    if has_llm:
+                        _check("Ollama", "PASS",
+                               f"running, {len(models)} models, '{config.llm.model}' available")
+                    else:
+                        _check("Ollama", "WARN",
+                               f"running but '{config.llm.model}' not pulled",
+                               f"ollama pull {config.llm.model}")
+                else:
+                    _check("Ollama", "WARN", f"HTTP {resp.status_code}",
+                           "brew services start ollama")
+            except Exception:
+                _check("Ollama", "WARN", "not reachable at " + config.llm.api_base,
+                       "brew services start ollama")
+        elif config.mode.value == "c":
+            # Mode C — check API key
+            if config.llm.api_key:
+                _check("API key", "PASS",
+                       f"provider={config.llm.provider}, key=***{config.llm.api_key[-4:]}")
+            else:
+                _check("API key", "WARN", "no API key configured",
+                       "slm provider set")
+    except Exception:
+        pass  # Config load failed — already caught above
+
+    # 9. Disk space
+    slm_home = Path.home() / ".superlocalmemory"
+    try:
+        usage = shutil.disk_usage(slm_home if slm_home.exists() else Path.home())
+        free_gb = usage.free / (1024 ** 3)
+        if free_gb >= 2.0:
+            _check("Disk space", "PASS", f"{free_gb:.1f} GB free")
+        else:
+            _check("Disk space", "WARN", f"{free_gb:.1f} GB free (< 2 GB)",
+                   "Free up disk space")
+    except Exception:
+        pass
+
+    # 10. Database integrity
+    db_path = slm_home / "memory.db"
+    if db_path.exists():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(db_path))
+            result = conn.execute("PRAGMA integrity_check").fetchone()
+            conn.close()
+            if result and result[0] == "ok":
+                size_mb = db_path.stat().st_size / (1024 * 1024)
+                _check("Database", "PASS", f"OK ({size_mb:.2f} MB)")
+            else:
+                _check("Database", "FAIL", f"integrity check: {result}",
+                       "Backup and recreate database")
+        except Exception as exc:
+            _check("Database", "FAIL", str(exc))
+    else:
+        _check("Database", "PASS", "not yet created (will initialize on first use)")
+
+    # Summary
+    if use_json:
+        from superlocalmemory.cli.json_output import json_print
+        next_actions = []
+        for c in checks:
+            if c["fix"]:
+                next_actions.append({"command": c["fix"], "description": f"Fix {c['name']}"})
+        json_print("doctor", data={
+            "checks": checks,
+            "summary": {"passed": passed, "warned": warned, "failed": failed},
+        }, next_actions=next_actions)
+    else:
+        print(f"\nSummary: {passed} passed, {warned} warnings, {failed} failed")
+        if failed > 0:
+            print("Run the suggested fix commands above, then re-run: slm doctor")
+
+
 def cmd_trace(args: Namespace) -> None:
     """Recall with per-channel score breakdown."""
     from superlocalmemory.core.engine import MemoryEngine
@@ -654,35 +903,74 @@ def cmd_mcp(_args: Namespace) -> None:
 
 def cmd_warmup(_args: Namespace) -> None:
     """Pre-download the embedding model so first use is instant."""
-    print("Downloading embedding model (nomic-ai/nomic-embed-text-v1.5)...")
-    print("This is ~500MB and only needed once.\n")
+    import superlocalmemory.core.embeddings as _emb_mod
+
+    print("SuperLocalMemory V3 — Embedding Model Warmup")
+    print("=" * 50)
+    print(f"  Python: {sys.executable}")
+    print(f"  Model:  nomic-ai/nomic-embed-text-v1.5 (~500MB)")
+    print()
+
+    # Increase timeout for first-time download
+    original_timeout = _emb_mod._SUBPROCESS_RESPONSE_TIMEOUT
+    _emb_mod._SUBPROCESS_RESPONSE_TIMEOUT = 180  # 3 min for cold start
 
     try:
         from superlocalmemory.core.config import EmbeddingConfig
         from superlocalmemory.core.embeddings import EmbeddingService
 
         config = EmbeddingConfig()
+
+        print("Step 1/3: Spawning embedding worker subprocess...")
         svc = EmbeddingService(config)
 
-        # Force model load (triggers download)
-        if svc.is_available:
-            # Verify it works
-            emb = svc.embed("warmup test")
-            if emb and len(emb) == config.dimension:
-                print(f"\nModel ready: {config.model_name} ({config.dimension}-dim)")
-                print("Semantic search is fully operational.")
-            else:
-                print("\nModel loaded but embedding verification failed.")
-                print("Run: pip install sentence-transformers einops")
+        if not svc.is_available:
+            print("\n[FAIL] Embedding service not available.")
+            _warmup_diagnose()
+            return
+
+        print("Step 2/3: Loading model (may download ~500MB on first run)...")
+        emb = svc.embed("warmup test")
+
+        if emb and len(emb) == config.dimension:
+            print("Step 3/3: Verifying embedding output...")
+            print(f"\n[PASS] Model ready: {config.model_name} ({config.dimension}-dim)")
+            print("Semantic search is fully operational.")
         else:
-            print("\nModel could not load.")
-            print("Install dependencies: pip install sentence-transformers einops torch")
+            print("\n[FAIL] Model loaded but embedding verification failed.")
+            _warmup_diagnose()
+
     except ImportError as exc:
-        print(f"\nMissing dependency: {exc}")
-        print("Install with: pip install sentence-transformers einops torch")
+        print(f"\n[FAIL] Missing dependency: {exc}")
+        print("Fix: pip install sentence-transformers einops torch")
     except Exception as exc:
-        print(f"\nWarmup failed: {exc}")
-        print("Check your internet connection and try again.")
+        print(f"\n[FAIL] Warmup failed: {exc}")
+        _warmup_diagnose()
+    finally:
+        _emb_mod._SUBPROCESS_RESPONSE_TIMEOUT = original_timeout
+
+
+def _warmup_diagnose() -> None:
+    """Diagnostic helper when warmup fails."""
+    print("\nDiagnosing...")
+    print(f"  Python executable: {sys.executable}")
+    try:
+        from sentence_transformers import SentenceTransformer
+        print("  sentence-transformers: importable")
+        m = SentenceTransformer(
+            "nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True, device="cpu",
+        )
+        v = m.encode(["test"], normalize_embeddings=True)
+        print(f"  Direct embed: OK (dim={v.shape[1]})")
+        print("\n  Issue: Subprocess worker failed but direct import works.")
+        print("  This is likely a Python path mismatch between Node.js wrapper")
+        print("  and your current shell. Run: slm doctor")
+    except ImportError as ie:
+        print(f"  sentence-transformers: NOT importable ({ie})")
+        print("  Fix: pip install sentence-transformers einops torch")
+    except Exception as de:
+        print(f"  Direct embed failed: {de}")
+        print("  Run: slm doctor")
 
 
 def cmd_dashboard(args: Namespace) -> None:
@@ -690,7 +978,8 @@ def cmd_dashboard(args: Namespace) -> None:
     try:
         import uvicorn
     except ImportError:
-        print("Dashboard requires: pip install 'fastapi[all]' uvicorn")
+        print("Dashboard requires additional deps. Run: slm doctor")
+        print("Or install manually: pip install 'fastapi[all]' uvicorn")
         sys.exit(1)
 
     import socket

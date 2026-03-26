@@ -175,9 +175,9 @@ class MemoryEngine:
             emb = cls(emb_cfg)
             if emb.is_available:
                 return emb
-            logger.warning("EmbeddingService not available. BM25-only mode.")
+            logger.warning("EmbeddingService not available. BM25-only mode. Run 'slm doctor' to diagnose.")
         except Exception as exc:
-            logger.warning("Embeddings unavailable (%s). BM25-only mode.", exc)
+            logger.warning("Embeddings unavailable (%s). BM25-only mode. Run 'slm doctor' to diagnose.", exc)
         return None
 
     def store(

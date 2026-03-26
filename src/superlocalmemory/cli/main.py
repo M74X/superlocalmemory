@@ -153,6 +153,10 @@ def main() -> None:
     trace_p.add_argument("query", help="Search query")
     trace_p.add_argument("--json", action="store_true", help="Output structured JSON (agent-native)")
 
+    # -- Diagnostics (continued) ----------------------------------------
+    doctor_p = sub.add_parser("doctor", help="Pre-flight check: deps, embedding worker, connectivity")
+    doctor_p.add_argument("--json", action="store_true", help="Output structured JSON (agent-native)")
+
     # -- Services ------------------------------------------------------
     sub.add_parser("mcp", help="Start MCP server (stdio transport for IDE integration)")
     sub.add_parser("warmup", help="Pre-download embedding model (~500MB, one-time)")

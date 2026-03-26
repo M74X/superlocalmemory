@@ -164,7 +164,12 @@ class EmbeddingService:
                     _SUBPROCESS_RESPONSE_TIMEOUT,
                 )
                 if not resp_line:
-                    logger.warning("Worker returned empty or timed out, restarting")
+                    logger.warning(
+                        "Embedding worker timed out after %ds. On first run, model "
+                        "download can take several minutes. Run 'slm doctor' to "
+                        "diagnose or 'slm warmup' to pre-download the model.",
+                        _SUBPROCESS_RESPONSE_TIMEOUT,
+                    )
                     self._kill_worker()
                     return None
                 resp = json.loads(resp_line)
@@ -174,7 +179,11 @@ class EmbeddingService:
                 self._reset_idle_timer()
                 return resp["vectors"]
             except (BrokenPipeError, OSError, json.JSONDecodeError) as exc:
-                logger.warning("Worker communication failed: %s", exc)
+                logger.warning(
+                    "Embedding worker communication failed: %s. "
+                    "Run 'slm doctor' to check dependencies and Python version.",
+                    exc,
+                )
                 self._kill_worker()
                 return None
 
@@ -231,7 +240,12 @@ class EmbeddingService:
             logger.info("Embedding worker spawned (PID %d)", self._worker_proc.pid)
             self._worker_ready = True
         except Exception as exc:
-            logger.warning("Failed to spawn embedding worker: %s", exc)
+            logger.warning(
+                "Failed to spawn embedding worker: %s. "
+                "Run 'slm doctor' to verify your Python environment. "
+                "Using Python: %s",
+                exc, sys.executable,
+            )
             self._available = False
             self._worker_proc = None
 
