@@ -81,7 +81,7 @@ class TestAutoInvokeConfig:
             data = resp.json()
 
             assert "enabled" in data
-            assert data["enabled"] is False
+            assert data["enabled"] is True
             assert "min_score" in data
             assert isinstance(data["min_score"], (int, float))
             assert "weights" in data

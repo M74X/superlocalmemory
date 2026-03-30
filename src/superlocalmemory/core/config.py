@@ -217,10 +217,10 @@ class MathConfig:
 class ConsolidationConfig:
     """Configuration for sleep-time consolidation (Phase 5).
 
-    Feature-flagged: starts enabled=False (Rule 12).
+    Ships enabled by default. Users can disable via slm config.
     """
 
-    enabled: bool = False                   # Feature flag (Rule 12)
+    enabled: bool = True
     step_count_trigger: int = 50            # Lightweight consolidation every N stores (L7)
     session_trigger: bool = True            # Run on session end
     idle_timeout_seconds: int = 300         # 5 min inactivity
@@ -237,10 +237,10 @@ class ConsolidationConfig:
 class TemporalValidatorConfig:
     """Configuration for temporal intelligence (Phase 4).
 
-    Feature-flagged: starts enabled=False (Rule 12).
+    Ships enabled by default. Users can disable via slm config.
     """
 
-    enabled: bool = False
+    enabled: bool = True
     mode: str = "a"                              # "a" (sheaf), "b"/"c" (LLM)
 
     # Sheaf contradiction threshold
@@ -263,8 +263,7 @@ class TemporalValidatorConfig:
 class AutoInvokeConfig:
     """Configuration for the Auto-Invoke Engine (Phase 2).
 
-    Feature-flagged: starts enabled=False, graduated to default on
-    after MRR validation passes (Rule 12).
+    Ships enabled by default. Users can disable via slm config.
 
     References:
       - SYNAPSE: FOK gating (fok_threshold = 0.12)
@@ -272,7 +271,7 @@ class AutoInvokeConfig:
       - Zep/Hindsight: multi-signal ranking consensus
     """
 
-    enabled: bool = False                      # Feature flag (Rule 12)
+    enabled: bool = True
     profile_id: str = "default"
 
     # Scoring weights (4-signal default) -- must sum to 1.0

@@ -32,7 +32,7 @@ class VectorStoreConfig:
     dimension: int = 768
     binary_quantization_threshold: int = 100_000  # L4 fix
     model_name: str = "nomic-embed-text-v1.5"
-    enabled: bool = False  # Rule 12: feature flag, default off
+    enabled: bool = True  # Ships enabled by default
 
 
 class VectorStore:

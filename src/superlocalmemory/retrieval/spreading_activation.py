@@ -50,7 +50,7 @@ class SpreadingActivationConfig:
     top_m: int = 7               # Lateral inhibition: max active nodes
     max_iterations: int = 3      # T: propagation depth
     tau_gate: float = 0.12       # FOK confidence gate
-    enabled: bool = False        # Feature flag (Rule 12)
+    enabled: bool = True         # Ships enabled by default
 
 
 # ---------------------------------------------------------------------------

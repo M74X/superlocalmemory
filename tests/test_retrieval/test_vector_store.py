@@ -71,7 +71,7 @@ class TestVectorStoreConfig:
     def test_defaults(self) -> None:
         cfg = VectorStoreConfig()
         assert cfg.dimension == 768
-        assert cfg.enabled is False
+        assert cfg.enabled is True
         assert cfg.binary_quantization_threshold == 100_000
 
     def test_frozen(self) -> None:
