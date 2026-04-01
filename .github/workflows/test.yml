@@ -20,7 +20,7 @@ jobs:
         shell: bash
 
       - name: Install test dependencies
-        run: pip install pytest
+        run: pip install pytest sqlite-vec
 
       - name: Run tests
         run: python -m pytest tests/ -q --tb=short --ignore=tests/test_integration/test_mode_b_ollama.py -x
