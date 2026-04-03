@@ -151,7 +151,7 @@ def _worker_main() -> None:
             # a fresh worker on next request (existing mechanism in embeddings.py).
             import resource
             rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024
-            if rss_mb > 1500:
+            if rss_mb > 2500:
                 sys.exit(0)
 
             continue

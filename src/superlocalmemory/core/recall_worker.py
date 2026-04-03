@@ -325,7 +325,7 @@ def _worker_main() -> None:
         # Parent auto-respawns a fresh worker on next request.
         import resource
         rss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 / 1024
-        if rss_mb > 1500:
+        if rss_mb > 2500:
             sys.exit(0)
 
 
