@@ -252,10 +252,11 @@ def cmd_remember(args: Namespace) -> None:
     from superlocalmemory.core.config import SLMConfig
 
     use_json = getattr(args, 'json', False)
-    fire_and_forget = getattr(args, 'fire_and_forget', False)
+    sync_mode = getattr(args, 'sync_mode', False)
 
-    # V3.3.19: --async flag for hooks/scripts — spawn background process, return instantly
-    if fire_and_forget:
+    # V3.3.19: Async by default — return instantly, process in background.
+    # Use --sync to wait for completion (e.g., when you need fact_ids back).
+    if not sync_mode:
         import subprocess
         cmd = [sys.executable, "-m", "superlocalmemory.cli.main", "remember", args.content]
         if args.tags:

@@ -135,8 +135,8 @@ def main() -> None:
     remember_p.add_argument("--tags", default="", help="Comma-separated tags")
     remember_p.add_argument("--json", action="store_true", help="Output structured JSON (agent-native)")
     remember_p.add_argument(
-        "--async", dest="fire_and_forget", action="store_true",
-        help="Return immediately, process in background (for hooks/scripts)",
+        "--sync", dest="sync_mode", action="store_true",
+        help="Wait for completion (default: async background processing)",
     )
 
     recall_p = sub.add_parser("recall", help="Semantic search with 4-channel retrieval")
