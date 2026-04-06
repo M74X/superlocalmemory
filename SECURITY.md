@@ -54,6 +54,14 @@ We will respond within 48 hours and provide a fix timeline within 7 days.
 
 Run `npm audit` and `pip audit` regularly. Report any findings.
 
+### Research Foundation
+
+The security architecture is formally documented across three peer-reviewed papers:
+
+- **Paper 1** ([arXiv:2603.02240](https://arxiv.org/abs/2603.02240)): Bayesian trust defense, OWASP-aligned memory poisoning protection
+- **Paper 2** ([arXiv:2603.14588](https://arxiv.org/abs/2603.14588)): Information-geometric foundations, cellular sheaf cohomology for contradiction detection
+- **Paper 3** ([Zenodo:10.5281/zenodo.19435120](https://zenodo.org/records/19435120)): Trust-weighted forgetting, compliance audit trails, FRQAD mixed-precision integrity
+
 ---
 
 Part of [Qualixar](https://qualixar.com) | Author: [Varun Pratap Bhardwaj](https://varunpratap.com)

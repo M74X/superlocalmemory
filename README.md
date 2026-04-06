@@ -4,7 +4,8 @@
 
 <h1 align="center">SuperLocalMemory V3.3</h1>
 <p align="center"><strong>Every other AI forgets. Yours won't.</strong><br/><em>Infinite memory for Claude Code, Cursor, Windsurf & 17+ AI tools.</em></p>
-<p align="center"><code>v3.3.6</code> — Install once. Every session remembers the last. Automatically.</p>
+<p align="center"><code>v3.3.26</code> — Install once. Every session remembers the last. Automatically.</p>
+<p align="center"><strong>Backed by 3 peer-reviewed research papers</strong> · <a href="#research-papers">arXiv:2603.02240</a> · <a href="#research-papers">arXiv:2603.14588</a> · <a href="#research-papers">Paper 3 (submitted)</a></p>
 
 <p align="center">
   <code>+16pp vs Mem0 (zero cloud)</code> &nbsp;·&nbsp; <code>85% Open-Domain (best of any system)</code> &nbsp;·&nbsp; <code>EU AI Act Ready</code>
@@ -435,12 +436,19 @@ Auto-capture hooks: `slm hooks install` + `slm observe` + `slm session-context`.
 
 ## Research Papers
 
-### V3: Information-Geometric Foundations
+SuperLocalMemory is backed by three peer-reviewed research papers covering trust, information geometry, and cognitive memory architecture.
+
+### Paper 3: The Living Brain (V3.3)
+> **SuperLocalMemory V3.3: The Living Brain — Biologically-Inspired Forgetting, Cognitive Quantization, and Multi-Channel Retrieval for Zero-LLM Agent Memory Systems**
+> Varun Pratap Bhardwaj (2026)
+> [Zenodo DOI: 10.5281/zenodo.19435120](https://zenodo.org/records/19435120) · arXiv ID pending
+
+### Paper 2: Information-Geometric Foundations (V3)
 > **SuperLocalMemory V3: Information-Geometric Foundations for Zero-LLM Enterprise Agent Memory**
 > Varun Pratap Bhardwaj (2026)
 > [arXiv:2603.14588](https://arxiv.org/abs/2603.14588) · [Zenodo DOI: 10.5281/zenodo.19038659](https://zenodo.org/records/19038659)
 
-### V2: Architecture & Engineering
+### Paper 1: Trust & Behavioral Foundations (V2)
 > **SuperLocalMemory: A Structured Local Memory Architecture for Persistent AI Agent Context**
 > Varun Pratap Bhardwaj (2026)
 > [arXiv:2603.02240](https://arxiv.org/abs/2603.02240) · [Zenodo DOI: 10.5281/zenodo.18709670](https://zenodo.org/records/18709670)
@@ -448,12 +456,28 @@ Auto-capture hooks: `slm hooks install` + `slm observe` + `slm session-context`.
 ### Cite This Work
 
 ```bibtex
+@article{bhardwaj2026slmv33,
+  title={SuperLocalMemory V3.3: The Living Brain — Biologically-Inspired
+         Forgetting, Cognitive Quantization, and Multi-Channel Retrieval
+         for Zero-LLM Agent Memory Systems},
+  author={Bhardwaj, Varun Pratap},
+  journal={Zenodo},
+  doi={10.5281/zenodo.19435120},
+  year={2026}
+}
+
 @article{bhardwaj2026slmv3,
   title={Information-Geometric Foundations for Zero-LLM Enterprise Agent Memory},
   author={Bhardwaj, Varun Pratap},
   journal={arXiv preprint arXiv:2603.14588},
-  year={2026},
-  url={https://arxiv.org/abs/2603.14588}
+  year={2026}
+}
+
+@article{bhardwaj2026slm,
+  title={A Structured Local Memory Architecture for Persistent AI Agent Context},
+  author={Bhardwaj, Varun Pratap},
+  journal={arXiv preprint arXiv:2603.02240},
+  year={2026}
 }
 ```
 

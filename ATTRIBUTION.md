@@ -36,6 +36,19 @@ from qualixar_attribution import QualixarSigner
 is_valid = QualixarSigner.verify(signed_output)
 ```
 
+### Research Papers
+
+SuperLocalMemory is backed by three peer-reviewed research papers:
+
+1. **Paper 1 — Trust & Behavioral Foundations** (arXiv:2603.02240)
+   Bayesian trust defense, behavioral pattern mining, OWASP-aligned memory poisoning protection.
+
+2. **Paper 2 — Information-Geometric Foundations** (arXiv:2603.14588)
+   Fisher-Rao geodesic distance, cellular sheaf cohomology, Riemannian Langevin lifecycle dynamics.
+
+3. **Paper 3 — The Living Brain** (Zenodo: 10.5281/zenodo.19435120)
+   FRQAD mixed-precision metric, Ebbinghaus adaptive forgetting, 7-channel cognitive retrieval, memory parameterization, trust-weighted forgetting.
+
 ### Research Initiative
 
 Qualixar is a research initiative for AI agent development tools by Varun Pratap Bhardwaj. SuperLocalMemory is one of several research initiatives under the Qualixar umbrella.
