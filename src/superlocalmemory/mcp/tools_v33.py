@@ -81,8 +81,9 @@ def register_v33_tools(server, get_engine: Callable) -> None:
                 facts = engine._db.get_all_facts(pid)
                 zones = {"active": 0, "warm": 0, "cold": 0, "archive": 0, "forgotten": 0}
                 for f in facts:
-                    r = ebbinghaus.compute_retention(f.access_count or 0, f.importance or 0.5, 0, 0.0)
-                    zone = ebbinghaus.classify_zone(r)
+                    strength = ebbinghaus.memory_strength(f.access_count or 0, f.importance or 0.5, 0, 0.0)
+                    r = ebbinghaus.retention(hours_since_access = 0.0, strength=strength)
+                    zone = ebbinghaus.lifecycle_zone(r)
                     zones[zone] = zones.get(zone, 0) + 1
                 result = {"total": len(facts), "transitions": 0, "dry_run_zones": zones}
             else:
@@ -399,9 +400,9 @@ def register_v33_tools(server, get_engine: Callable) -> None:
             # 3. Behavioral pattern mining
             try:
                 from superlocalmemory.learning.consolidation_worker import ConsolidationWorker
-                cw = ConsolidationWorker(engine._db, engine._config)
-                patterns = cw._generate_patterns(pid)
-                results["behavioral"] = {"patterns_mined": len(patterns)}
+                cw = ConsolidationWorker(MEMORY_DIR / "memory.db", MEMORY_DIR / "learning.db")
+                count = cw._generate_patterns(pid, False)
+                results["behavioral"] = {"patterns_mined": count}
             except Exception as exc:
                 results["behavioral"] = {"error": str(exc)}
 
