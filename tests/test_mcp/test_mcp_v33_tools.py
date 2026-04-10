@@ -570,3 +570,46 @@ class TestGetRetentionStatsTool:
         # Verify query used custom profile
         call_args = engine._db.execute.call_args
         assert call_args[0][1] == ("custom",)
+
+# ---------------------------------------------------------------------------
+# Maintenance Tools tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunMaintenanceTool:
+    """Tests for the run_maintenance MCP tool."""
+
+    def _get_tool(self):
+        from superlocalmemory.mcp.tools_v33 import register_v33_tools
+        srv = _MockServer()
+        engine = _make_mock_engine()
+        get_engine = MagicMock(return_value=engine)
+        register_v33_tools(srv, get_engine)
+        return srv._tools["run_maintenance"], engine
+
+    def test_behavioral_patterns_mined(self):
+        """run_maintenance behavioral section uses correct ConsolidationWorker args."""
+        tool, engine = self._get_tool()
+
+        with patch(
+            "superlocalmemory.learning.consolidation_worker.ConsolidationWorker"
+        ) as MockCW, patch(
+            "superlocalmemory.core.maintenance.run_maintenance",
+            return_value={"updated": 0},
+        ), patch(
+            "superlocalmemory.learning.forgetting_scheduler.ForgettingScheduler"
+        ) as MockSched, patch(
+            "superlocalmemory.math.ebbinghaus.EbbinghausCurve"
+        ):
+            MockSched.return_value.run_decay_cycle.return_value = {
+                "total": 0, "active": 0, "warm": 0,
+                "cold": 0, "archive": 0, "forgotten": 0, "transitions": 0,
+            }
+            MockCW.return_value._generate_patterns.return_value = 7
+            result = _run(tool())
+
+        assert result["success"] is True
+        assert result["behavioral"]["patterns_mined"] == 7
+        init_args = MockCW.call_args[0]
+        assert init_args[0] == engine._db.db_path
+        assert init_args[1] == engine._db.db_path.parent / "learning.db"
