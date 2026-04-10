@@ -191,7 +191,7 @@ class TestForgetTool:
         assert result["total"] == 100
         assert result["transitions"] == 8
         assert result["dry_run"] is False
-    
+
     def test_forget_dry_run_returns_zone_distribution(self):
         """forget returns zone counts and averages."""
         tool, engine = self._get_tool()
