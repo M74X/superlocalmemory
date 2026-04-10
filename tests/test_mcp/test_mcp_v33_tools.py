@@ -191,6 +191,27 @@ class TestForgetTool:
         assert result["total"] == 100
         assert result["transitions"] == 8
         assert result["dry_run"] is False
+    
+    def test_forget_dry_run_returns_zone_distribution(self):
+        """forget returns zone counts and averages."""
+        tool, engine = self._get_tool()
+
+        mock_rows = [
+           {"lifecycle_zone": "active", "cnt": 50},
+           {"lifecycle_zone": "warm", "cnt": 20},
+           {"lifecycle_zone": "cold", "cnt": 10},
+           {"lifecycle_zone": "archive", "cnt": 5},
+           {"lifecycle_zone": "forgotten", "cnt": 3},
+        ]
+        engine._db.execute.return_value = mock_rows
+
+        result = _run(tool())
+
+        assert result["success"] is True
+        assert result["total"] == 88
+        assert result["dry_run_zones"]["active"] == 50
+        assert result["dry_run_zones"]["warm"] == 20
+        assert result["dry_run_zones"]["cold"] == 10
 
     def test_forget_with_profile(self):
         """forget tool uses provided profile_id."""
