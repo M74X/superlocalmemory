@@ -403,7 +403,7 @@ def register_v33_tools(server, get_engine: Callable) -> None:
             # 3. Behavioral pattern mining
             try:
                 from superlocalmemory.learning.consolidation_worker import ConsolidationWorker
-                cw = ConsolidationWorker(MEMORY_DIR / "memory.db", MEMORY_DIR / "learning.db")
+                cw = ConsolidationWorker(engine._db.db_path, engine._db.db_path.parent / "learning.db",)
                 count = cw._generate_patterns(pid, False)
                 results["behavioral"] = {"patterns_mined": count}
             except Exception as exc:
