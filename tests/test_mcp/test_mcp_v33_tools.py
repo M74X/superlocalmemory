@@ -175,7 +175,7 @@ class TestForgetTool:
         return srv._tools["forget"], engine
 
     def test_forget_returns_success_with_stats(self):
-        """forget dry_run=True returns zone counts from fact_retention."""
+        """forget dry_run=False returns zone counts from fact_retention."""
         tool, engine = self._get_tool()
 
         mock_result = {
@@ -203,7 +203,7 @@ class TestForgetTool:
         assert result["dry_run"] is False
 
     def test_forget_dry_run_returns_zone_distribution(self):
-        """forget returns zone counts and averages."""
+        """forget dry_run=True returns zone counts from fact_retention."""
         tool, engine = self._get_tool()
 
         mock_rows = [
